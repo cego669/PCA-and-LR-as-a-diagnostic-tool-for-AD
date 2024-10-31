@@ -6,6 +6,9 @@ import numpy as np
 import joblib as jb
 from sklearn.preprocessing import StandardScaler, minmax_scale
 import datetime
+from sklearn.decomposition import PCA
+import os
+import json
 
 
 
@@ -18,14 +21,11 @@ def generate_report(patient_name, patient_sex, patient_dob, exam_loc, patient_im
     patient_vectorM = patient_vector[0, mask != 0]
     patient_vectorMS = minmax_scale(patient_vectorM).reshape((1, -1))
 
-    score = clf.intercept_ + np.sum(pca.transform(patient_vectorMS) * clf.coef_, axis = 1)
+    score = clf_intercept + np.sum(pca.transform(patient_vectorMS) * clf_coef, axis = 1)
 
     ########## PLOT
     # defining StandardScaler to scale log odds over the non-Alzheimer disease group
     scaler = StandardScaler()
-
-    # calculating log odds
-    train_log_odds = clf.intercept_ + np.sum(pca.transform(X_train) * clf.coef_, axis = 1)
 
     # scaling log odds over the non-Alzheimer disease group
     scaler.fit(train_log_odds[np.array(y_train) == 0].reshape(-1, 1))
@@ -97,7 +97,7 @@ def generate_report(patient_name, patient_sex, patient_dob, exam_loc, patient_im
     # Brief description
     plt.figtext(0.1, 0, """
     nAD: non-Alzheimer disease group; AD: Alzheimer disease group.
-    Validation metrics (CDI, n = 100 nAD / 92 AD):  Sensitivity = 90.22%, Precision = 86.46%, Accuracy = 88.54%, AUC = 94.75%
+    Validation metrics (CDI, n = 100 nAD / 92 AD):  Sensitivity = 89.13%, Precision = 86.32%, Accuracy = 88.02%
     Reference: Gonçalves de Oliveira CE, Araújo WM, Teixeira ABMJ, Gonçalves GL, Itikawa EN. PCA and logistic regression in
     2-[18F]FDG PET neuroimaging as an interpretable and diagnostic tool for Alzheimer's disease. Phys Med Biol.
     2023 Nov 17. doi: 10.1088/1361-6560/ad0ddd. PMID: 37976549.""", fontsize = 12)
@@ -118,14 +118,63 @@ def generate_report(patient_name, patient_sex, patient_dob, exam_loc, patient_im
     plt.savefig("{}_AD_report.png".format(patient_name.replace(" ", "_")), dpi = 650, bbox_inches = "tight")
 
 
-############################################################### LOADING USEFUL FILES
-bs = jb.load("model/bs_fitted.pkl")
-mask = jb.load("data/mask/mask.pkl")
-X_train, y_train = jb.load("paper_code_and_files/saved_files/training_data.pkl")
+# load "fragmented" pca
+def load_fragmented_pca(directory='fragmented_pca'):
+    """
+    Loads PCA attributes from fragmented files.
+    
+    Parameters:
+    - directory: Directory where the fragments are saved.
+    
+    Returns:
+    - Reconstructed PCA object.
+    """
+    # Load PCA parameters
+    with open(os.path.join(directory, 'pca_params.json'), 'r') as f:
+        pca_params = json.load(f)
+    
+    # Create a new PCA instance with the loaded parameters
+    pca = PCA(
+        n_components=pca_params['n_components'],
+        svd_solver=pca_params['svd_solver'],
+        tol=pca_params['tol'],
+        copy=pca_params['copy'],
+        whiten=pca_params['whiten'],
+        random_state=pca_params['random_state']
+    )
+    
+    # Load and set attributes
+    pca.explained_variance_ = np.load(os.path.join(directory, 'explained_variance_.npy'))
+    pca.explained_variance_ratio_ = np.load(os.path.join(directory, 'explained_variance_ratio_.npy'))
+    pca.singular_values_ = np.load(os.path.join(directory, 'singular_values_.npy'))
+    pca.mean_ = np.load(os.path.join(directory, 'mean_.npy'))
+    
+    # Load and reconstruct `components_`
+    components_parts = pca_params.get('components_parts', 5)
+    components_list = []
+    for i in range(1, components_parts + 1):
+        part = np.load(os.path.join(directory, f'components_part_{i}.npy'))
+        components_list.append(part)
+    
+    pca.components_ = np.concatenate(components_list, axis=1)
+    
+    return pca
 
-# INPUT
-clf = bs.best_estimator_["LR"]
-pca = bs.best_estimator_["PCA"]
+
+############################################################### LOADING USEFUL FILES
+
+# Loading model parameters
+clf_coef = jb.load("model/clf_coef.pkl")
+clf_intercept = jb.load("model/clf_intercept.pkl")
+pca = load_fragmented_pca(directory='model/fragmented_pca')
+
+# Loading mask
+mask = jb.load("data/mask/mask.pkl")
+
+# Loading only y_train and then pre calculated train_log_odds
+y_train = jb.load("model/y_train_only.pkl")
+train_log_odds = jb.load("model/train_log_odds.pkl")
+
 
 ############################################################### SIDE BAR
 section = st.sidebar.selectbox("Section:", ["Generate Report"])
@@ -136,7 +185,7 @@ st.sidebar.markdown("""""", unsafe_allow_html=True)
 ###################################### SECTION: GENERATE REPORT
 if section == "Generate Report":
 
-    st.markdown("""""")
+    st.markdown("""# Alzheimer's disease prediction""")
 
     with st.form(key = "user_input"):
         
