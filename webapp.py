@@ -364,7 +364,7 @@ if section == "Understanding the Model":
         ### 1. Principal Component Analysis (PCA)
         PCA is a dimensionality reduction technique that simplifies a dataset while preserving the most important information. Imagine having several brain images where each voxel is a variable. PCA transforms the data so that:
 
-        - **Principal Components** are calculated as linear combinations of the original variables.
+        - **Principal Components** are calculated as linear combinations of the original variables (voxels). In this sense, the principal components capture patterns over correlated voxels.
         - The **First Principal Component** captures the most variance in the data, followed by the second, and so on.
 
         For neuroimages, PCA allows us to focus on the most relevant patterns, reducing complexity without losing essential data.
@@ -391,6 +391,7 @@ if section == "Understanding the Model":
     To prevent the model from overfitting the data, we use a technique called **regularization**:
 
     - **L1 Regularization (LASSO):** Reduces less important coefficients to zero, simplifying the model.
+    - **L2 Regularization ():** less important coefficients also tend to zero, but in a less 'agressive' way.
     - This ensures that only the most significant patterns contribute to the diagnosis.
 
     ### Model Interpretation
