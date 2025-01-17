@@ -180,7 +180,20 @@ train_log_odds = jb.load("model/train_log_odds.pkl")
 section = st.sidebar.selectbox("Section:", ["Generate Report"])
 
 # texto da aba
-st.sidebar.markdown("""""", unsafe_allow_html=True)
+st.sidebar.markdown('''
+This web application allows you to use the machine learning model implemented for the scientific article ["PCA and logistic regression in 2-[18F]FDG PET neuroimaging as an interpretable and diagnostic tool for Alzheimer's disease"](https://iopscience.iop.org/article/10.1088/1361-6560/ad0ddd) and interact with PET-FDG neuroimages in NIFTI format.
+
+Please note that the model outputs should not be used or interpreted without the supervision of appropriately specialized nuclear physicians. Therefore, **the model is unable to make clinical decisions alone**.
+
+Our work can be cited as:
+
+```
+Gonçalves de Oliveira CE, Araújo WM, Teixeira ABMJ, Gonçalves GL,
+Itikawa EN. PCA and logistic regression in 2-[18F]FDG PET neuroimaging as
+an interpretable and diagnostic tool for Alzheimer's disease. Phys Med Biol.
+2023 Nov 17. doi: 10.1088/1361-6560/ad0ddd. PMID: 37976549.
+```
+''', unsafe_allow_html=True)
 
 ###################################### SECTION: GENERATE REPORT
 if section == "Generate Report":
@@ -201,13 +214,14 @@ if section == "Generate Report":
         exam_loc = st.text_input("Exam location")
         
         st.markdown("""
-        <h5 style='text-align: center;'>Image file (.img/.hdr)</h5>
-        """, unsafe_allow_html=True)
+        <h5 style='text-align: center;'>🧠 PET-FDG neuroimage file (.img/.hdr)</h5>
+        
+        Please, note that the neuroimage must be dully reoriented (if necessary), spatially normalized (MNI space) and smoothed (default settings) using the tools available in [SPM12](https://www.fil.ion.ucl.ac.uk/spm/software/spm12/).""", unsafe_allow_html=True)
 
-        uploaded_img = st.file_uploader(".IMG FILE",
+        uploaded_img = st.file_uploader(".img file",
                                         type=["img"])
         
-        uploaded_hdr = st.file_uploader(".HDR FILE",
+        uploaded_hdr = st.file_uploader(".hdr file",
                                         type=["hdr"])
 
         predict = st.columns(5)[-1].form_submit_button("Get Report")
