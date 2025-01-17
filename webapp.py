@@ -177,7 +177,9 @@ train_log_odds = jb.load("model/train_log_odds.pkl")
 
 
 ############################################################### SIDE BAR
-section = st.sidebar.selectbox("Section:", ["Generate Report"])
+st.sidebar.image("aimip_logo.png", use_column_width=True)
+
+section = st.sidebar.selectbox("Section:", ["Generate Report", "Explore Neuroimage"])
 
 # texto da aba
 st.sidebar.markdown('''
@@ -193,17 +195,26 @@ Itikawa EN. PCA and logistic regression in 2-[18F]FDG PET neuroimaging as
 an interpretable and diagnostic tool for Alzheimer's disease. Phys Med Biol.
 2023 Nov 17. doi: 10.1088/1361-6560/ad0ddd. PMID: 37976549.
 ```
+
+Lead author:
+                                        
+[Carlos Eduardo Gonçalves de Oliveira](https://www.linkedin.com/in/cego669/) ([@cego669](https://github.com/cego669))
 ''', unsafe_allow_html=True)
 
 ###################################### SECTION: GENERATE REPORT
 if section == "Generate Report":
 
-    st.markdown("""# Alzheimer's disease prediction""")
+    st.markdown(
+        """
+        <h1 style='text-align: center;'>Alzheimer's disease prediction</h1>
+        """,
+        unsafe_allow_html=True
+    )
 
     with st.form(key = "user_input"):
         
         st.markdown("""
-        <h5 style='text-align: center;'>Patient's Data</h5>
+        <h5 style='text-align: center;'>📋 Patient's Data</h5>
         """, unsafe_allow_html=True)
 
         patient_name = st.text_input("Name")
@@ -244,3 +255,97 @@ if section == "Generate Report":
                                file_name="{}_AD_report.png".format(patient_name.replace(" ", "_")))
         else:
             st.error("Please, upload the image file!")
+
+###################################### SECTION: EXPLORE NEUROIMAGE
+if section == "Explore Neuroimage":
+    st.markdown(
+        """
+        <h1 style='text-align: center;'>Explore Neuroimage</h1>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    st.markdown("Upload a `.img` and `.hdr` file to explore the PET-FDG neuroimage interactively across all three planes.")
+    
+    uploaded_img = st.file_uploader(".img file", type=["img"])
+    uploaded_hdr = st.file_uploader(".hdr file", type=["hdr"])
+    
+    if uploaded_img is not None and uploaded_hdr is not None:
+        with st.spinner("Processing neuroimage... Please wait."):
+            # Save files temporarily
+            with open("temp_image.img", "wb") as f:
+                f.write(uploaded_img.getbuffer())
+            with open("temp_image.hdr", "wb") as f:
+                f.write(uploaded_hdr.getbuffer())
+            
+            # Load neuroimage
+            img = nib.load("temp_image.img")
+            data = img.get_fdata()
+            
+            st.markdown("---")
+            st.markdown(
+                """
+                <h2 style='text-align: center;'>Visualization Pane</h2>
+                """,
+                unsafe_allow_html=True
+            )
+
+            # Create columns for side-by-side layout
+            col1, col2, col3 = st.columns(3)
+
+            # Axial plane
+            with col1:
+                #st.markdown("### Axial Plane")
+                axial_slice = st.slider("Axial Plane Slice:", 0, data.shape[2] - 1, data.shape[2] // 2, key="axial_slider")
+                axial_data = data[:, :, axial_slice]
+                axial_aspect_ratio = axial_data.shape[0] / axial_data.shape[1]
+                fig_axial = px.imshow(
+                    axial_data,
+                    color_continuous_scale="gray",
+                    aspect=0.835
+                )
+                fig_axial.update_layout(
+                    height=320,
+                    width=320,
+                    coloraxis_showscale=False  # Remove color bar
+                )
+                st.plotly_chart(fig_axial, use_container_width=False)
+            
+            # Coronal plane
+            with col2:
+                #st.markdown("### Coronal Plane")
+                coronal_slice = st.slider("Coronal Plane Slice:", 0, data.shape[1] - 1, data.shape[1] // 2, key="coronal_slider")
+                coronal_data = data[:, coronal_slice, :]
+                coronal_aspect_ratio = coronal_data.shape[0] / coronal_data.shape[1]
+                fig_coronal = px.imshow(
+                    coronal_data,
+                    color_continuous_scale="gray",
+                    aspect=1.0
+                )
+                fig_coronal.update_layout(
+                    height=320,
+                    width=320,
+                    coloraxis_showscale=False  # Remove color bar
+                )
+                st.plotly_chart(fig_coronal, use_container_width=False)
+            
+            # Sagittal plane
+            with col3:
+                #st.markdown("### Sagittal Plane")
+                sagittal_slice = st.slider("Sagittal Plane Slice:", 0, data.shape[0] - 1, data.shape[0] // 2, key="sagittal_slider")
+                sagittal_data = data[sagittal_slice, :, :]
+                sagittal_aspect_ratio = sagittal_data.shape[0] / sagittal_data.shape[1]
+                fig_sagittal = px.imshow(
+                    sagittal_data,
+                    color_continuous_scale="gray",
+                    aspect=0.835
+                )
+                fig_sagittal.update_layout(
+                    height=320,
+                    width=320,
+                    coloraxis_showscale=False  # Remove color bar
+                )
+                st.plotly_chart(fig_sagittal, use_container_width=False)
+        
+    else:
+        st.warning("Please upload both `.img` and `.hdr` files.")
