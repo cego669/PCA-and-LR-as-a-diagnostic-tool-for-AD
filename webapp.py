@@ -179,7 +179,7 @@ train_log_odds = jb.load("model/train_log_odds.pkl")
 ############################################################### SIDE BAR
 st.sidebar.image("aimip_logo.png", use_column_width=True)
 
-section = st.sidebar.selectbox("Section:", ["Generate Report", "Explore Neuroimage"])
+section = st.sidebar.selectbox("Section:", ["Generate Report", "Explore Neuroimage", "Understanding the Model"])
 
 # texto da aba
 st.sidebar.markdown('''
@@ -349,3 +349,59 @@ if section == "Explore Neuroimage":
         
     else:
         st.warning("Please upload both `.img` and `.hdr` files.")
+
+if section == "Understanding the Model":
+    st.markdown("""
+        <h1 style='text-align: center;'>Understanding the Model</h1>
+        """, unsafe_allow_html=True)
+
+    st.markdown("""
+        **How the model works?**
+
+        Our Alzheimer's disease diagnostic model combines two important machine learning techniques: 
+        **Principal Component Analysis (PCA)** and **Logistic Regression (LR)**.
+
+        ### 1. Principal Component Analysis (PCA)
+        PCA is a dimensionality reduction technique that simplifies a dataset while preserving the most important information. Imagine having several brain images where each voxel is a variable. PCA transforms the data so that:
+
+        - **Principal Components** are calculated as linear combinations of the original variables.
+        - The **First Principal Component** captures the most variance in the data, followed by the second, and so on.
+
+        For neuroimages, PCA allows us to focus on the most relevant patterns, reducing complexity without losing essential data.
+
+        ### 2. Logistic Regression (LR)
+        After extracting the principal components, we use LR to classify patients:
+
+        - Each principal component is assigned a weight indicating its influence on the diagnosis.
+        - LR calculates the probability of a patient belonging to the Alzheimer's group (AD) or the non-Alzheimer's group (nAD) using the formula:
+    """, unsafe_allow_html=True)
+
+    st.latex(r"P(\text{AD}) = \frac{1}{1 + e^{-\left(\beta_0 + \beta_1 \cdot PC_1 + \beta_2 \cdot PC_2 + \dots + \beta_p \cdot PC_p\right)}}")
+
+    st.markdown("""
+    Here:
+    """, unsafe_allow_html=True)
+
+    st.latex(r"\beta_0 \text{ is the intercept.}")
+
+    st.latex(r"\beta_1, \beta_2, \dots, \beta_p \text{ are the weights of the principal components.}")
+
+    st.markdown("""
+    ### 3. Regularization for Better Generalization
+    To prevent the model from overfitting the data, we use a technique called **regularization**:
+
+    - **L1 Regularization (LASSO):** Reduces less important coefficients to zero, simplifying the model.
+    - This ensures that only the most significant patterns contribute to the diagnosis.
+
+    ### Model Interpretation
+    One advantage of this model is its **interpretability**:
+
+    - Brain regions highlighted in red on the figure below represent a high probability of Alzheimer's, while blue regions indicate a low probability.
+    - This approach allows us to understand how the model makes decisions, which is crucial for medical applications.
+    """, unsafe_allow_html=True)
+
+    left_co, cent_co,last_co = st.columns(3)
+    with cent_co:
+        st.image("figure4.png", width=300, caption="Resulting linear combination of principal components adjusted by their respective weights in a sequence of axial slices. Regions in red are associated with a higher probability for AD given high intensities in the voxels while regions in blue are associated with a lower probability for AD given high intensities in the voxels.")
+
+    st.info("If you have any questions or want to dive deeper into the mathematics, feel free to explore our linked publication in the sidebar!")
