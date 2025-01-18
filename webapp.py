@@ -356,53 +356,113 @@ if section == "Understanding the Model":
         """, unsafe_allow_html=True)
 
     st.markdown("""
-        **How the model works?**
+        **Purpose of the Model and Application**
 
-        Our Alzheimer's disease diagnostic model combines two important machine learning techniques: 
-        **Principal Component Analysis (PCA)** and **Logistic Regression (LR)**.
+        This web application is a practical implementation of a machine learning-based diagnostic tool for Alzheimer's disease (AD), built upon the methodology described in the associated research article. The model uses **Principal Component Analysis (PCA)** for dimensionality reduction and **Logistic Regression (LR)** for classification. The goal is to provide an interpretable, efficient, and clinically relevant decision-making tool.
 
-        ### 1. Principal Component Analysis (PCA)
-        PCA is a dimensionality reduction technique that simplifies a dataset while preserving the most important information. Imagine having several brain images where each voxel is a variable. PCA transforms the data so that:
+        The application allows:
 
-        - **Principal Components** are calculated as linear combinations of the original variables (voxels). In this sense, the principal components capture patterns over correlated voxels.
-        - The **First Principal Component** captures the most variance in the data, followed by the second, and so on.
+        - **Prediction of AD:** Generating reports with patient-specific probabilities of Alzheimer's disease.
+        - **Exploration of Neuroimages:** Visualization of PET-FDG scans in various planes.
+        - **Educational Insight:** Understanding the machine learning model and its decisions.
 
-        For neuroimages, PCA allows us to focus on the most relevant patterns, reducing complexity without losing essential data.
+        Below is a detailed breakdown of the techniques and their roles in the application.
 
-        ### 2. Logistic Regression (LR)
-        After extracting the principal components, we use LR to classify patients:
+        ### Principal Component Analysis (PCA)
 
-        - Each principal component is assigned a weight indicating its influence on the diagnosis.
-        - LR calculates the probability of a patient belonging to the Alzheimer's group (AD) or the non-Alzheimer's group (nAD) using the formula:
-    """, unsafe_allow_html=True)
+        PCA is a dimensionality reduction technique that transforms high-dimensional data into a smaller set of uncorrelated variables called principal components. Each principal component (PC) is a linear combination of the original features (voxels in neuroimages).
 
-    st.latex(r"P(\text{AD}) = \frac{1}{1 + e^{-\left(\beta_0 + \beta_1 \cdot PC_1 + \beta_2 \cdot PC_2 + \dots + \beta_p \cdot PC_p\right)}}")
+        Mathematically, given a dataset represented as a matrix **X** of size **(n x p)** (**n**: observations, **p**: features):
 
+        1. **Center the data:** Subtract the mean from each feature to ensure a zero-centered dataset.
+
+        """)
+    st.latex(r"\tilde{X} = X - \text{mean}(X)")
     st.markdown("""
-    Here:
-    """, unsafe_allow_html=True)
 
-    st.latex(r"\beta_0 \text{ is the intercept.}")
+        2. **Compute the covariance matrix:**
 
-    st.latex(r"\beta_1, \beta_2, \dots, \beta_p \text{ are the weights of the principal components.}")
-
+        """)
+    st.latex(r"\Sigma = \frac{1}{n} \tilde{X}^T \tilde{X}")
     st.markdown("""
-    ### 3. Regularization for Better Generalization
-    To prevent the model from overfitting the data, we use a technique called **regularization**:
 
-    - **L1 Regularization (LASSO):** Reduces less important coefficients to zero, simplifying the model.
-    - **L2 Regularization ():** less important coefficients also tend to zero, but in a less 'agressive' way.
-    - This ensures that only the most significant patterns contribute to the diagnosis.
+        3. **Eigen decomposition:** Solve
 
-    ### Model Interpretation
-    One advantage of this model is its **interpretability**:
+        """)
+    st.latex(r"\Sigma v = \lambda v")
+    st.markdown("""
+        to obtain eigenvalues (\( \lambda \)) and eigenvectors (\( v \)).
 
-    - Brain regions highlighted in red on the figure below represent a high probability of Alzheimer's, while blue regions indicate a low probability.
-    - This approach allows us to understand how the model makes decisions, which is crucial for medical applications.
+        4. **Project data:**
+
+        """)
+    st.latex(r"Z = \tilde{X} V")
+    st.markdown("""
+
+        Here, Z represents the data in the principal component space, and the eigenvectors corresponding to the largest eigenvalues capture the most variance.
+
+        For neuroimages, PCA reduces the dimensionality from hundreds of thousands of voxels to a few PCs that preserve most of the data variance.
+
+        ### Logistic Regression (LR)
+
+        Logistic regression is used to classify patients based on the extracted PCs. The model estimates the probability **P(y = 1 | x)** (probability of having AD) using the sigmoid function:
+
+        """)
+    st.latex(r"P(y = 1 \mid x) = \frac{1}{1 + e^{-z}}")
+    st.markdown("""
+
+        where:
+
+        """)
+    st.latex(r"z = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \dots + \beta_p x_p")
+    st.markdown("""
+
+        - β<sub>0</sub>: Intercept.
+        - β<sub>0</sub>, ..., β<sub>p</sub>: Coefficients for each principal component ( x<sub>0</sub>, ..., x<sub>p</sub> ).
+
+        The model is trained to minimize the log-loss:
+
+        """, unsafe_allow_html=True)
+    st.latex(r"\mathcal{L}(\beta) = -\frac{1}{n} \sum_{i=1}^n \left[ y_i \log(P_i) + (1 - y_i) \log(1 - P_i) \right]")
+    st.markdown("""
+
+        ### Regularization
+
+        To prevent overfitting and ensure a simpler model, regularization is applied:
+
+        - **L1 Regularization:** Encourages sparsity by adding
+
+        """)
+    st.latex(r"\lambda \sum |\beta_j|")
+    st.markdown("""
+
+        to the loss function.
+        - **L2 Regularization:** Penalizes large coefficients by adding
+
+        """)
+    st.latex(r"\lambda \sum \beta_j^2")
+    st.markdown("""
+
+        to the loss function.
+
+        In this application, the optimal regularization was determined using cross-validation, with the L1 penalty performing best.
+
+        ### Interpretability of the Model
+
+        - **Visualizing Important Regions:** The PCA-LR model highlights brain regions associated with AD probability. Voxels with high intensities in significant regions (e.g., posterior cingulate gyrus, parietal lobes) are associated with higher AD likelihood.
+        - **Output Scores:** The patient's probability score is displayed along with a decision boundary, aiding interpretation.
     """, unsafe_allow_html=True)
 
     left_co, cent_co,last_co = st.columns(3)
     with cent_co:
         st.image("figure4.png", width=300, caption="Resulting linear combination of principal components adjusted by their respective weights in a sequence of axial slices. Regions in red are associated with a higher probability for AD given high intensities in the voxels while regions in blue are associated with a lower probability for AD given high intensities in the voxels.")
 
-    st.info("If you have any questions or want to dive deeper into the mathematics, feel free to explore our linked publication in the sidebar!")
+    st.markdown("""
+        ### Advantages of the Model
+
+        - **Efficiency:** Handles high-dimensional neuroimaging data.
+        - **Generalizability:** Tested on external clinical data, achieving high accuracy (88.54%) and AUC (94.75%).
+        - **Reproducibility:** Built with standard ML techniques and public datasets, enabling straightforward replication.
+
+        This model bridges advanced machine learning and clinical application, providing interpretable and reliable predictions while maintaining computational simplicity.
+    """, unsafe_allow_html=True)
